@@ -19,6 +19,7 @@ The purpose of this project is to build an AI agent that designs and manages div
 
 **Moonshot Goal:**
 - Achieve strong generalization to unseen layouts and demand/resource schedules by using a graph-based or hierarchical policy.
+- Implement a resource reward system. Where after surviving a fixed interval the agent will be reward a locomotive and choose among a set of resource (e.g., new line, carriage, interchange or tunnel), and learn a policy that optimizes both network expansion and resource allocation under this decision space.
 
 ## Algorithms
 We plan on using model-free, on-policy deep reinforcement learning such as PPO with neural function approximator.
