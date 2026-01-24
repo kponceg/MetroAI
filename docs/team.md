@@ -12,5 +12,5 @@ title:  Team 4
 ## USER 2
 ***UCI Net ID***: shisonz
 
-## USER 3
-***UCI Net ID***: ucinetid3
+## Jorge Hernan Malagon Velasquez
+***UCI Net ID***: jhmalago
