@@ -1,0 +1,5 @@
+*.pyc
+.coverage
+myenv/
+.venv/
+.trace
