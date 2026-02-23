@@ -378,34 +378,107 @@ class MiniMetroRLEnv(BaseEnv):
                 return False
 
         # ---------------------------------------
-        # Action 3: remove most overloaded path
+        # Action 3: remove least useful path and add new connection between top congested stations
         if action_id == 3:
-            if n_paths == 0:
-                return False
-            if i < 0 or i >= n_paths:
+            if n_paths == 0 or n_stations < 2:
                 return False
 
-            # remove a path agent selected
-            path_remove = paths[i]
+            # choose a path to remove:
+            # use i if valid, otherwise remove lowest-load path
+            if 0 <= i < n_paths:
+                path_remove = paths[i]
+            else:
+                path_remove = min(paths, key=path_load)
+
+            before = self._num_paths()
 
             try:
-                #overloaded_path = max(paths, key=lambda p: sum(st.occupation for st in p.stations))
                 pm.remove_path(path_remove)
-                self._last_action = "remove"
-                return True
+
+                # choose stations to connect (use i,j if valid, else top-2 congested)
+                if 0 <= i < n_stations and 0 <= j < n_stations and i != j:
+                    s1, s2 = stations[i], stations[j]
+                else:
+                    sorted_st = sorted(stations[:n_stations], key=lambda s: s.occupation, reverse=True)
+                    s1, s2 = sorted_st[0], sorted_st[1]
+
+                w = pm.start_path_on_station(s1)
+                if w is None:
+                    return False
+
+                creating = pm._creating_or_expanding_path
+                if creating is None:
+                    return False
+
+                creating.add_station_to_path(s2)
+                creating.try_to_end_path_on_station(s2)
+
+                after = self._num_paths()
+
             except Exception:
                 return False
+            finally:
+                pm._creating_or_expanding_path = None
+
+            # succeeded if we didn't permanently lose a path
+            if after >= before:
+                self._last_action = "replace"   
+                return True
+            return False
 
         # ---------------------------------------
-        # wont reach to this action for now
-        # Action 4: connect least connected station
-        if action_id == 4 and paths:
-            # station with fewest path memberships
-            try:
-                least_connected = min(stations, key=lambda s: len(s.paths))
-                target_path = min(paths, key=lambda p: len(p.stations))
+        # Action 4: connect the least-connected high-demand station to a path that includes a congested station
+        if action_id == 4:
+            if n_paths == 0 or n_stations == 0:
+                return False
 
-                pm.extend_path(target_path, least_connected)
-                return True
+            candidates = stations[:n_stations]
+            occupied = [s for s in candidates if s.occupation > 0] or candidates
+
+            # pick target station: use j if valid else least-connected among occupied
+            if 0 <= j < n_stations:
+                target = stations[j]
+            else:
+                target = min(occupied, key=lambda s: self._station_degree(s))
+
+            # pick a path to expand: use i if valid else pick busiest
+            if 0 <= i < n_paths:
+                chosen_path = paths[i]
+            else:
+                chosen_path = max(paths, key=path_load)
+
+            # anchor must be a station on chosen_path
+            anchor = chosen_path.last_station
+            candidate_paths = pm.get_paths_with_station(anchor)
+            if not candidate_paths or chosen_path not in candidate_paths:
+                return False
+
+            # determine the index required by start_expanding_path_on_station
+            path_idx = candidate_paths.index(chosen_path)
+
+            # don't add duplicates
+            if target in chosen_path.stations:
+                return False
+
+            before_len = len(chosen_path.stations)
+            try:
+                w = pm.start_expanding_path_on_station(anchor, path_idx)
+                if w is None:
+                    return False
+
+                expanding = pm._creating_or_expanding_path
+                if not expanding:
+                    return False
+
+                expanding.add_station_to_path(target)
+
             except Exception:
                 return False
+            finally:
+                pm._creating_or_expanding_path = None
+
+            if len(chosen_path.stations) > before_len:
+                self._last_action = "expand"
+                return True
+            return False
+    
