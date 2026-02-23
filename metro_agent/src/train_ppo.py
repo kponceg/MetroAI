@@ -18,7 +18,7 @@ if __name__ == "__main__":
     os.makedirs(logdir, exist_ok=True)
 
     venv = DummyVecEnv([make_env(42)])
-    venv = VecNormalize(venv, norm_obs=True, norm_reward=False, clip_reward=10.0)
+    venv = VecNormalize(venv, norm_obs=True, norm_reward=True, clip_reward=10.0)
 
     model = PPO(
         policy="MlpPolicy",
