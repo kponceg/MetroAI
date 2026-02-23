@@ -1,13 +1,17 @@
+import random
+
 from src.rl_env import MiniMetroRLEnv
 import matplotlib.pyplot as plt
+import numpy as np
 
+random.seed(42)
+np.random.seed(42)
 
 env = MiniMetroRLEnv(
-    dt_ms=16,
-    congest_threshold=3,   # start LOW so you actually see congestion
-    fail_threshold=10,# start LOW so episodes can en
-    max_stations=20,
-    max_episode_steps=2000
+    #dt_ms=16,
+    #congest_threshold=9,   # start LOW so you actually see congestion
+    #fail_threshold=12, # start LOW so episodes can en
+    #max_stations=10
 )
 
 obs, info = env.reset(seed=42)
@@ -17,14 +21,7 @@ maxq_hist = []
 totalw_hist = []
 reward_hist = []
 
-max_steps = 2000
-
-
-print("Before:", info)
-# check the system actually connect
-obs, r, terminated, truncated, info = env.step(1)
-print("After action=1:", info)
-
+max_steps = 20000
 
 pm = env.engine.path_manager
 c = env.engine._components
@@ -45,12 +42,14 @@ for t in range(max_steps):
               f" congested={info['congested']} invalid={info.get('invalid_action', False)} r = {reward:.3f}")
 
     if terminated or truncated:
+        print(f"terminated: {terminated}"
+              f" truncated={truncated}")
         break
 
-survival_time = t + 1 # 2000?
+survival_time = t + 1
 congestion_rate = congested_steps / survival_time
 
-print("Survival time:", survival_time)
+print("Survival time(steps):", survival_time)
 print("Congestion rate:", congestion_rate)
 print("Final max queue:", maxq_hist[-1])
 print("Final total waiting:", totalw_hist[-1])
@@ -68,7 +67,6 @@ plt.title("Total waiting passengers over time")
 plt.xlabel("Timestep")
 plt.ylabel("Total waiting")
 plt.show()
-
 
 plt.figure()
 plt.plot(reward_hist)
