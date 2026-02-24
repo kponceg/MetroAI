@@ -35,11 +35,20 @@ We use reward to enovurages the policy to reduce crowding on stations and increa
 
 ### PPO
 We train the agent using Proximal Policy Optimization (PPO) 
-$q_i$
+$q_i$. (Schulman, J)
 
 PPO uses a clipped policy update. Define the probability ratio:
 ```math
 p_t(\theta)=\frac{{\pi_\theta}(a_s | s_t)}{{\pi_\theta}{\text{old}}(a_s | s_t)}
+```
+
+```math
+\mathcal{L}^{\text{CLIP}}(\theta)=\mathbb{E}_{t}\left[
+\min\Big(
+\rho_t(\theta)\hat{A}_t,\;
+\text{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon)\hat{A}_t
+\Big)
+\right]
 ```
 
 **Code Methods**
@@ -66,10 +75,10 @@ Stable-Baslines3:
 - https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html
 
 PPO Algorithms:
-- https://arxiv.org/abs/1707.06347
+- Schulman, J., Wolski, F., Dhariwal, P., Radford, A., & Klimov, O. (2017, July 20). Proximal Policy optimization Algorithms. arXiv.org. https://arxiv.org/abs/1707.06347
 
 Gymnasium:
 - https://gymnasium.farama.org
 
 Python custom mini metro game engine:
-- https://github.com/autosquash/python_mini_metro_extended 
+- https://github.com/autosquash/python_mini_metro_extended
