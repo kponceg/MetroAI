@@ -55,7 +55,7 @@ A key challenge is how delayed our credit assignment is. Structural network edit
 
 We used a Stable-Baselines3 (PPO), Gymnasium, and an open-source Mini Metro simulation repository as the foundation of our environment. We also used ChatGPT as a source to explain the source code for us to understand, and helped us debug environment integration issues.
 
-Stable Basline3:
+Stable-Baslines3:
 - https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html
 
 PPO Algorithms:
