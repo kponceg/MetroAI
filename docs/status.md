@@ -103,7 +103,9 @@ verbose|1
 
 
 ## Evaluation
+We are logging the agent’s reward progression and action statistics during training to monitor whether PPO is learning a stable control policy over time. In addition to cumulative return, we track per-action usage and invalid-action rates to understand how the agent is interacting with the environment. By visualizing reward curves and action distributions together, we can identify patterns such as action collapse, repeated invalid selections, or excessive penalty accumulation that negatively impact performance.
 
+By correlating reward spikes and invalid-action streaks with specific operations (expansion or removal), we are able to diagnose when reward shaping or feasibility constraints are dominating learning. For example, large negative reward spikes revealed that penalty scaling was overwhelming the learning signal, causing the agent to accumulate extreme negative returns despite surviving for a similar number of steps as the random baseline. Using these insights, we iteratively adjust action indexing, feasibility checks, and reward scaling to reduce invalid loops and improve policy stability.
 
 ## Remaining Goals and Challenges
 
