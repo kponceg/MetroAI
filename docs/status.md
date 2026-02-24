@@ -16,11 +16,13 @@ We model the game as an Markov Decision Process. At each timestep $t$, the agent
 
 ### State/Observation
 We use a compact feature vector as the observation:
+$$
+O_t ​= [q_1​, …, q_N, d_1​, …, d_N​, P]
+$$
 
-$O_t$ ​= $[q_1​, …, q_N, d_1​, …, d_N​, P]$
 - $q_i$: the stataion "i" current queue/occupation
 - $d_i$: the station "i" dgree (how many paths include the this station)
-- $P$: list of [number of paths, number of stations, time]
+- $P$: list containing [number of paths, number of stations, time]
 
 ### Action Space
 We use discrete high level operatiors, implemeted as parameteried acitons such as (action id, $station_i$ , $station_j$). Parameters are choosen by the agent.
@@ -57,15 +59,15 @@ $$
 \right]
 $$
 
-- $O_t$: observation in step t
-- $A_t$: action in step t
-- $r_t$: reward in step t
+- $O_t$: observation in step $t$
+- $A_t$: action in step $t$
+- $r_t$: reward in step $t$
 - $\theta$: current policy
-- ${\pi_\theta}(A_t|O_t)$: probability that the current policy assigns to taking action $A_t$ given observation $O_t$
-- $p_t(\theta)$: ratio between new and old action probability
+- $\pi_\theta(A_t \mid O_t)$: probability that the current policy assigns to taking action $A_t$ given observation $O_t$
+- $\rho_t(\theta)$: ratio between new and old action probability
 - $\mathcal{L}^{\text{CLIP}}$: PPO's clipped policy objective
 - $\text{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon)$: clamps the ratio into $[1-\epsilon,1+\epsilon]$ to prevent overly large policy updates
-- $\hat{A}_t$: advantage estimate at time t
+- $\hat{A}_t$: advantage estimate at time $t$
 
 ### Exploration (PPO)
 Exploration comes from:
