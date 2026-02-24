@@ -82,17 +82,17 @@ We use a MLP policy (`MlpPolicy`). For 1D feature observations, SB3’s default 
 
 ### Parameter Values
 | Paramter | Value |
-| --- | --- |
-policy|MlpPolicy 
-n_steps|1024
-batch_size|256
-gamma|0.99
-gae_lambda|0.95
-learning_rate|3e-4
-ent_coef|0.02
-vf_coef|0.5
-clip_range|0.2
-verbose|1
+|---|---|
+| policy |MlpPolicy |
+| n_steps | 1024 |
+| batch_size | 256 |
+| gamma | 0.99 |
+| gae_lambda | 0.95 |
+| learning_rate | 3e-4 |
+| ent_coef | 0.02 |
+| vf_coef | 0.5 |
+| clip_range | 0.2 |
+| verbose | 1 |
 
 **Code Methods**
 - Environment: `rl_env.py` (`MiniMetroRLEnv`)
