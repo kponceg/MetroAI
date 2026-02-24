@@ -4,10 +4,11 @@ title: Status
 ---
 
 ## Project Summary
-We implement a reinforcement learning agent to play Mini Metro in a custom simulation environment. The environment exposes a Gym-like API to help the agent to oberve the transit system state and choose high level network edit actions from the custom game engine. The agent selects high-level network edit actions that includes creating, expanding, and replacing transit lines to manage congestion under growing passenger demand.
-We train a Proximal Policy Optimization (PPO) agent to learn a control policy that maximizes survival time while minimizing passenger waiting and overcrowding. As well as analyzing how action design and reward structure affect system performance and stability.
+
+We implemented a reinforcement learning agent to play Mini Metro in a custom simulation environment. The environment exposes a Gym-like API to help the agent to oberve the transit system state and choose high level network edit actions from the custom game engine. The actions include creating, expanding, and replacing transit lines to manage congestion under growing passenger demand. We train a Proximal Policy Optimization (PPO) agent to learn a control policy that maximizes survival time while minimizing passenger waiting and overcrowding. As well as analyzing how action design and reward structure affect system performance and stability.
 
 ## Approach
+
 Our main algorithm to train an agent to play Mini Metro is Proximal Policy Optimization (PPO). This is an on policy algorithm that learns a neural network policy to approximate an optimal control strategy for metro network editions.
 
 ### Markov Decision Process
@@ -42,7 +43,26 @@ We use reward to enovurages the policy to reduce crowding on stations and increa
 
 ## Evaluation
 
+
 ## Remaining Goals and Challenges
 
+Our current prototype successfully trains a PPO agent and compares it to a random baseline, but evaluation remains limited. We plan to conduct multi-seed evaluations, compare our agent against stronger heuristic baselines, and systematically analyze the impact of reward design and action structure. We also aim to refine the action space to better capture realistic network planning decisions.
+
+A key challenge is how delayed our credit assignment is. Structural network edits may have long-term effects that are difficult for PPO to learn. Additionally, the MultiDiscrete action space can produce invalid or low impact actions, slowing convergence. To address this, we plan to explore improved reward shaping and possibly action masking.
+
+
 ## Resources Used
-Python custom mini metro game engine: https://github.com/autosquash/python_mini_metro_extended 
+
+We used a Stable-Baselines3 (PPO), Gymnasium, and an open-source Mini Metro simulation repository as the foundation of our environment. We also used ChatGPT as a source to explain the source code for us to understand, and helped us debug environment integration issues.
+
+Stable Basline3:
+- https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html
+
+PPO Algorithms:
+- https://arxiv.org/abs/1707.06347
+
+Gymnasium:
+- https://gymnasium.farama.org
+
+Python custom mini metro game engine:
+- https://github.com/autosquash/python_mini_metro_extended 
