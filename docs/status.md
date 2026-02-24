@@ -74,7 +74,7 @@ $$
 
 ### Exploration (PPO)
 Exploration comes from:
-- sampling actions from a stochastic policy $\pi_\theta(A_t|O_t)$ during training 
+- sampling actions from a stochastic policy \\( \pi_\theta(A_t|O_t) \\) during training 
 - an entropy bonus controlled by `ent_coef` hyper-parameter, higher vlaue equal to more exploration
 
 Exploration is still present when ent_coef = 0.0, since the policy is stochastic, but the algorithm is less explicitly encouraged to stay exploratory
