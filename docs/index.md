@@ -12,6 +12,7 @@ title:  Home
 Source code: [MetroAI](https://github.com/kponceg/MetroAI)
 
 Summary:
+
 We built a reinforcement learning agent that learns to design and manage a growing metro system under pressure. By creating, expanding, and restructuring transit lines, the agent adapts to rising passenger demand to prevent congestion and system failure. Our goal is to discover intelligent network strategies that maximize survival time while keeping the system efficient and stable.
 
 Reports:
