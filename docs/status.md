@@ -12,28 +12,35 @@ We implemented a reinforcement learning agent to play Mini Metro in a custom sim
 Our main algorithm to train an agent to play Mini Metro is Proximal Policy Optimization (PPO). This is an on policy algorithm that learns a neural network policy to approximate an optimal control strategy for metro network editions.
 
 ### Markov Decision Process
-We model the game as an Markov Decision Process. At each timestep "t", the agent receives an observation (O_t), selects an action (A_t), and the simulator advance by a fixed time step (detlat)
+We model the game as an Markov Decision Process. At each timestep $t$, the agent receives an observation ($O_t$), selects an action ($A_t$), and the simulator advance by a fixed time step (detla t)
 
 ### State/Observation
 We use a compact feature vector as the observation:
 
-O_t ​= [q_1​, …, q_N, d_1​, …, d_N​, P]
-- q_i: the stataion "i" current queue/occupation
-- d_i: the station "i" dgree (how many paths include the this station)
-- P: list of [number of paths, number of stations, time]
+$O_t$ ​= $[q_1​, …, q_N, d_1​, …, d_N​, P]$
+- $q_i$: the stataion "i" current queue/occupation
+- $d_i$: the station "i" dgree (how many paths include the this station)
+- $P$: list of [number of paths, number of stations, time]
 
 ### Action Space
-We use discrete high level operatiors, implemeted as parameteried acitons such as (action id, station i , station j). Parameters are choosen by the agent.
+We use discrete high level operatiors, implemeted as parameteried acitons such as (action id, $station_i$ , $station_j$). Parameters are choosen by the agent.
 - action 0: Do nothing
-- action 1: create and connect station_i to station_j
-- action 2: expand the network from station_i to station_j
-- action 3: remove a low utility path, then create a new connection between ,ost congested station_i and station_j
-- action 4: connect a least connected but high demand station_i to station_j
+- action 1: create and connect $station_i$ to $station_j$
+- action 2: expand the network from $station_i$ to $station_j$
+- action 3: remove a low utility path, then create a new connection between most congested $station_i$ and $station_j$
+- action 4: connect a least connected but high demand $station_i$ to $station_j$
 
 ### Reward 
 We use reward to enovurages the policy to reduce crowding on stations and increase survial time by prevent overflow.
 
 ### PPO
+We train the agent using Proximal Policy Optimization (PPO) 
+$q_i$
+
+PPO uses a clipped policy update. Define the probability ratio:
+```math
+p_t(\theta)=\frac{{\pi_\theta}(a_s | s_t)}{{\pi_\theta}{\text{old}}(a_s | s_t)}
+```
 
 **Code Methods**
 - Environment: `rl_env.py` (`MiniMetroRLEnv`)
