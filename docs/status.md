@@ -107,12 +107,12 @@ We are logging the agent’s reward progression and action statistics during tra
 
 By correlating reward spikes and invalid-action streaks with specific operations (expansion or removal), we are able to diagnose when reward shaping or feasibility constraints are dominating learning. For example, large negative reward spikes revealed that penalty scaling was overwhelming the learning signal, causing the agent to accumulate extreme negative returns despite surviving for a similar number of steps as the random baseline. Using these insights, we iteratively adjust action indexing, feasibility checks, and reward scaling to reduce invalid loops and improve policy stability.
 
-![](1.png)
-![](2.png)
-![](3.png)
-![](4.png)
-![](5.png)
-![](6.png)
+<img src="1.png" width="300" height="300">
+<img src="2.png" width="300" height="300">
+<img src="3.png" width="300" height="300">
+<img src="4.png" width="300" height="300">
+<img src="5.png" width="300" height="300">
+<img src="6.png" width="300" height="300">
 
 
 ## Remaining Goals and Challenges
