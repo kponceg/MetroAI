@@ -66,6 +66,20 @@ p_t(\theta)=\frac{{\pi_\theta}(A_t | O_t)}{{\pi_\theta}{\text{old}}(A_t | O_t)}
 - $\text{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon)$: clamps the ratio into $[1-\epsilon,1+\epsilon]$ to prevent overly large policy updates
 - $\hat{A}_t$: advantage estimate at time t
 
+### Parameter Values
+| Paramter | Value |
+| --- | --- |
+policy|MlpPolicy 
+n_steps|1024
+batch_size|256
+gamma|0.99
+gae_lambda|0.95
+learning_rate|3e-4
+ent_coef|0.02
+vf_coef|0.5
+clip_range|0.2
+verbose|1
+
 **Code Methods**
 - Environment: `rl_env.py` (`MiniMetroRLEnv`)
 - Observation/state features: `rl_env.py` → `_get_obs()`
