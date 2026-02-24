@@ -107,6 +107,14 @@ We are logging the agent’s reward progression and action statistics during tra
 
 By correlating reward spikes and invalid-action streaks with specific operations (expansion or removal), we are able to diagnose when reward shaping or feasibility constraints are dominating learning. For example, large negative reward spikes revealed that penalty scaling was overwhelming the learning signal, causing the agent to accumulate extreme negative returns despite surviving for a similar number of steps as the random baseline. Using these insights, we iteratively adjust action indexing, feasibility checks, and reward scaling to reduce invalid loops and improve policy stability.
 
+!(1.png)
+!(2.png)
+!(3.png)
+!(4.png)
+!(5.png)
+!(6.png)
+
+
 ## Remaining Goals and Challenges
 
 Our current prototype successfully trains a PPO agent and compares it to a random baseline, but evaluation remains limited. We plan to conduct multi-seed evaluations, compare our agent against stronger heuristic baselines, and systematically analyze the impact of reward design and action structure. We also aim to refine the action space to better capture realistic network planning decisions.
