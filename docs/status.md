@@ -81,9 +81,10 @@ Exploration is still present when ent_coef = 0.0, since the policy is stochastic
 We use a MLP policy (`MlpPolicy`). For 1D feature observations, SB3’s default is a 2-layer fully-connected network with 64 units per layer for PPO. 
 
 ### Parameter Values
+
 | Paramter | Value |
 |---|---|
-| policy |MlpPolicy |
+| policy | MlpPolicy |
 | n_steps | 1024 |
 | batch_size | 256 |
 | gamma | 0.99 |
