@@ -16,6 +16,7 @@ We model the game as an Markov Decision Process. At each timestep $t$, the agent
 
 ### State/Observation
 We use a compact feature vector as the observation:
+
 $$
 O_t ​= [q_1​, …, q_N, d_1​, …, d_N​, P]
 $$
