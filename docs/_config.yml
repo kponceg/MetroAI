@@ -9,6 +9,8 @@ subtitle: 'CS 175: Project in AI'
 # more settings
 
 markdown: kramdown
+kramdown:
+  input: GFM
 
 exclude:
 - README.md
