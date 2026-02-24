@@ -53,11 +53,17 @@ class MiniMetroRLEnv(BaseEnv):
         self.last_num_paths = 0
         self.n_actions = 5 # 5
         self._last_action = None # none/create/expand/remove
+        self.invalid_streak = 0
+        self.max_invalid_streak = 50  # cap to avoid exploding penalties
+        self.invalid_streak_scale = 0.5  # tune: 0.3–1.0
 
-        observation_dim = 2 * self.max_stations + 3
-        higher_bound = np.array([self.occupancy_rate_capped] * self.max_stations +
-                                [1000] * self.max_stations +
-                                [1000.0, 1000.0, 1.0], dtype=np.float32)
+        observation_dim = 2 * self.max_stations + 4
+        higher_bound = np.array(
+            [self.occupancy_rate_capped] * self.max_stations +
+            [1000] * self.max_stations +
+            [1000.0, 1000.0, 1.0, 1.0],  # extra 1.0 for paths_left
+            dtype=np.float32
+        )
         lower_bound = np.zeros(observation_dim, dtype=np.float32)
         self.observation_space = spaces.Box(low=lower_bound, high=higher_bound, dtype = np.float32)
         self.action_space = spaces.MultiDiscrete([self.n_actions, self.max_stations, self.max_stations]) # 0 ... 4
@@ -67,6 +73,7 @@ class MiniMetroRLEnv(BaseEnv):
         self._timeout_ms_by_station_id = {}
 
     def reset(self, seed=0):
+        self.invalid_streak = 0
         random.seed(seed)
         np.random.seed(seed)
 
@@ -113,6 +120,12 @@ class MiniMetroRLEnv(BaseEnv):
         # check termination
         invalid = not success
         info["invalid_action"] = invalid
+        
+        if invalid:
+            self.invalid_streak = min(self.invalid_streak + 1, self.max_invalid_streak)
+        else:
+            self.invalid_streak = 0
+        info["invalid_streak"] = self.invalid_streak
 
         terminated = bool(info["failed"])
         truncated = self.t >= self.max_episode_steps # max time
@@ -140,7 +153,13 @@ class MiniMetroRLEnv(BaseEnv):
 
         # penalties
         if invalid:
-            reward -= self.invalid_action_penalty
+            # base penalty
+            penalty = self.invalid_action_penalty
+
+            # chained invalid penalty (quadratic growth is strong; linear is gentler)
+            penalty += self.invalid_streak_scale * (self.invalid_streak ** 2)
+
+            reward -= penalty
         if terminated:
             reward -= self.terminal_fail_penalty
 
@@ -220,9 +239,12 @@ class MiniMetroRLEnv(BaseEnv):
 
         t_norm = self.t / self.max_episode_steps # early/late game
 
+        pm = self.engine.path_manager
+        max_paths = pm.max_num_paths
+        paths_left = (max_paths - num_paths) / max(1, max_paths)
 
         return np.array(
-            queues + degrees + [num_paths, num_stations, t_norm],
+            queues + degrees + [num_paths, num_stations, paths_left, t_norm],
             dtype=np.float32
         )
 
@@ -292,6 +314,8 @@ class MiniMetroRLEnv(BaseEnv):
         # ---------------------------------------
         # Action 1: create new connection between 2 most congested stations
         if action_id == 1:
+            if len(paths) >= pm.max_num_paths:
+                return False
             if n_stations < 2:
                 return False
             if i < 0 or j < 0 or i >= n_stations or j >= n_stations or i == j:
@@ -336,47 +360,55 @@ class MiniMetroRLEnv(BaseEnv):
         # ---------------------------------------
         # Action 2: extend busiest path toward most congested station
         if action_id == 2:
-            if n_stations < 2 or n_paths == 0:
+            if n_paths == 0 or n_stations < 2:
                 return False
 
-            path_idx = i % n_paths
-            target_idx = j % n_stations
-
-            chosen_path = paths[path_idx]
-            target = stations[target_idx]
-            anchor = chosen_path.last_station
-
-            candidate_paths = pm.get_paths_with_station(anchor)
-            if not candidate_paths or chosen_path not in candidate_paths:
+            # HARD bounds check
+            if i < 0 or j < 0 or i >= n_paths or j >= n_stations:
                 return False
 
-            # reduce ambiguity
+            chosen_path = paths[i]
+            target = stations[j]
+
+            # don't add duplicate station
             if target in chosen_path.stations:
                 return False
 
-            path_idx = candidate_paths.index(chosen_path)
-            before_len = len(chosen_path.stations)
-            try:
-                editor = pm.start_expanding_path_on_station(anchor, path_idx)
-                if editor is None:
-                    return False
+            anchors = []
+            if chosen_path.stations:
+                anchors.append(chosen_path.stations[-1])
+                anchors.append(chosen_path.stations[0])
 
-                expanding = pm._creating_or_expanding_path
-                if not expanding:
-                    return False
-                expanding.add_station_to_path(target)
+            for anchor in anchors:
+                if anchor is None:
+                    continue
 
-            except Exception as e:
-                print(f"Action2 Error: {e}")
-                return False
-            finally:
-                pm._creating_or_expanding_path = None
+                candidate_paths = pm.get_paths_with_station(anchor)
+                if not candidate_paths or chosen_path not in candidate_paths:
+                    continue
 
-            if len(chosen_path.stations) > before_len:
-                self._last_action = "expand"
-                return True
-            else:
-                return False
+                local_idx = candidate_paths.index(chosen_path)
+                before_len = len(chosen_path.stations)
+
+                try:
+                    editor = pm.start_expanding_path_on_station(anchor, local_idx)
+                    if editor is None:
+                        continue
+
+                    expanding = pm._creating_or_expanding_path
+                    if not expanding:
+                        continue
+
+                    expanding.add_station_to_path(target)
+
+                finally:
+                    pm._creating_or_expanding_path = None
+
+                if len(chosen_path.stations) > before_len:
+                    self._last_action = "expand"
+                    return True
+
+            return False
 
         # ---------------------------------------
         # Action 3: remove least useful path and add new connection between top congested stations
@@ -433,20 +465,15 @@ class MiniMetroRLEnv(BaseEnv):
             if n_paths == 0 or n_stations == 0:
                 return False
 
-            candidates = stations[:n_stations]
-            occupied = [s for s in candidates if s.occupation > 0] or candidates
+            # HARD bounds
+            if i < 0 or j < 0 or i >= n_paths or j >= n_stations:
+                return False
 
-            # pick target station: use j if valid else least-connected among occupied
-            if 0 <= j < n_stations:
-                target = stations[j]
-            else:
-                target = min(occupied, key=lambda s: self._station_degree(s))
+            chosen_path = paths[i]
+            target = stations[j]
 
-            # pick a path to expand: use i if valid else pick busiest
-            if 0 <= i < n_paths:
-                chosen_path = paths[i]
-            else:
-                chosen_path = max(paths, key=path_load)
+            if target in chosen_path.stations:
+                return False
 
             # anchor must be a station on chosen_path
             anchor = chosen_path.last_station
@@ -454,17 +481,11 @@ class MiniMetroRLEnv(BaseEnv):
             if not candidate_paths or chosen_path not in candidate_paths:
                 return False
 
-            # determine the index required by start_expanding_path_on_station
-            path_idx = candidate_paths.index(chosen_path)
-
-            # don't add duplicates
-            if target in chosen_path.stations:
-                return False
-
+            local_idx = candidate_paths.index(chosen_path)
             before_len = len(chosen_path.stations)
             try:
-                w = pm.start_expanding_path_on_station(anchor, path_idx)
-                if w is None:
+                editor = pm.start_expanding_path_on_station(anchor, local_idx)
+                if editor is None:
                     return False
 
                 expanding = pm._creating_or_expanding_path
@@ -473,8 +494,6 @@ class MiniMetroRLEnv(BaseEnv):
 
                 expanding.add_station_to_path(target)
 
-            except Exception:
-                return False
             finally:
                 pm._creating_or_expanding_path = None
 

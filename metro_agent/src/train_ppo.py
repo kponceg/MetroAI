@@ -3,7 +3,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 
-from rl_env import MiniMetroRLEnv
+from src.rl_env import MiniMetroRLEnv
 
 def make_env(seed: int = 42):
     def _init():

@@ -53,8 +53,8 @@ def run_episode(venv, policy_fn, max_steps=20000):
     rew_hist = []
     last_info = {}
 
-    count_by_op = np.zeros(4, dtype=int)
-    invalid_by_op = np.zeros(4, dtype=int)
+    count_by_op = np.zeros(5, dtype=int)
+    invalid_by_op = np.zeros(5, dtype=int)
 
     for t in range(max_steps):
         action = policy_fn(obs, venv)
