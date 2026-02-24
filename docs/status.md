@@ -22,8 +22,8 @@ O_t ​= [q_1​, …, q_N, d_1​, …, d_N​, P]
 $$
 
 - \\( q_i \\): the stataion  \( i \)'s current queue/occupation
-- $d_i$: the station $i$'s dgree (how many paths include the this station)
-- $P$: list containing [number of paths, number of stations, time]
+- \\( d_i \\): the station \\( i \\)'s dgree (how many paths include the this station)
+- \\( P \\): list containing [number of paths, number of stations, time]
 
 ### Action Space
 We use discrete high level operatiors, implemeted as parameteried acitons such as (action id, $station_i$ , $station_j$). Parameters are choosen by the agent.
