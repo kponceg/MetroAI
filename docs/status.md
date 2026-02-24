@@ -42,10 +42,10 @@ Reward is calcuate by different aspect, such as penalty on long queue/waiting ti
 
 ### PPO
 We train the agent using Proximal Policy Optimization (PPO) 
-$q_i$. (Schulman, J)
+ \\( q_i \\). (Schulman, J)
 
 At each PPO iteration:
-Collect n_steps transitions $(O_t, A_t, r_t, O_{t+1})$ using the current policy compute advantage estimates $\hat{A}_t$ optimize the PPO losses for n_epochs epochs over minibatches of size batch_size
+Collect n_steps transitions \\( (O_t, A_t, r_t, O_{t+1}) \\) using the current policy compute advantage estimates $\hat{A}_t$ optimize the PPO losses for n_epochs epochs over minibatches of size batch_size
 
 PPO uses a clipped policy update. Define the probability ratio:
 
