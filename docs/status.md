@@ -26,12 +26,12 @@ $$
 - \\( P \\): list containing [number of paths, number of stations, time]
 
 ### Action Space
-We use discrete high level operatiors, implemeted as parameteried acitons such as (action id, $station_i$ , $station_j$). Parameters are choosen by the agent.
+We use discrete high level operatiors, implemeted as parameteried acitons such as (action id, \\( station_i \\) , \\( station_j \\)). Parameters are choosen by the agent.
 - action 0: Do nothing
-- action 1: create and connect $station_i$ to $station_j$
-- action 2: expand the network from $station_i$ to $station_j$
-- action 3: remove a low utility path, then create a new connection between most congested $station_i$ and $station_j$
-- action 4: connect a least connected but high demand $station_i$ to $station_j$
+- action 1: create and connect \\( station_i \\) to \\( station_j \\)
+- action 2: expand the network from \\( station_i \\) to \\( station_j \\)
+- action 3: remove a low utility path, then create a new connection between most congested \\( station_i \\) and \\( station_j \\)
+- action 4: connect a least connected but high demand \\( station_i \\) to \\( station_j \\)
 
 ### Reward 
 We use reward to enovurages the policy to reduce crowding on stations and increase survial time by prevent overflow.
