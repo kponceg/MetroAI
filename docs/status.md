@@ -96,6 +96,7 @@ We use a MLP policy (`MlpPolicy`). For 1D feature observations, SB3’s default 
 | verbose       | 1         |
 
 
+
 **Code Methods**
 - Environment: `rl_env.py` (`MiniMetroRLEnv`)
 - Observation/state features: `rl_env.py` → `_get_obs()`
