@@ -46,7 +46,6 @@ PPO uses a clipped policy update. Define the probability ratio:
 ```math
 p_t(\theta)=\frac{{\pi_\theta}(A_t | O_t)}{{\pi_\theta}{\text{old}}(A_t | O_t)}
 ```
-
 ```math
 \mathcal{L}^{\text{CLIP}}(\theta)=\mathbb{E}_{t}\left[
 \min\Big(
