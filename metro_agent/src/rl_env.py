@@ -51,7 +51,7 @@ class MiniMetroRLEnv(BaseEnv):
         self.timeout_ms = 2000 # used to determine game end by overflow
         self.last_total_waiting = 0.0
         self.last_num_paths = 0
-        self.n_actions = 4 # 5
+        self.n_actions = 5 # 5
         self._last_action = None # none/create/expand/remove
 
         observation_dim = 2 * self.max_stations + 3
@@ -374,6 +374,7 @@ class MiniMetroRLEnv(BaseEnv):
 
             if len(chosen_path.stations) > before_len:
                 self._last_action = "expand"
+                return True
             else:
                 return False
 
