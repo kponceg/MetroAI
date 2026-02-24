@@ -62,15 +62,15 @@ $$
 \right]
 $$
 
-- $O_t$: observation in step $t$
-- $A_t$: action in step $t$
-- $r_t$: reward in step $t$
-- $\theta$: current policy
-- $\pi_\theta(A_t \mid O_t)$: probability that the current policy assigns to taking action $A_t$ given observation $O_t$
-- $\rho_t(\theta)$: ratio between new and old action probability
-- $\mathcal{L}^{\text{CLIP}}$: PPO's clipped policy objective
-- $\text{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon)$: clamps the ratio into $[1-\epsilon,1+\epsilon]$ to prevent overly large policy updates
-- $\hat{A}_t$: advantage estimate at time $t$
+- \\( O_t \\): observation in step \\( t \\)
+- \\( A_t \\): action in step \\( t \\)
+- \\( r_t \\): reward in step \\( t \\)
+- \\( \theta \\): current policy
+- \\( \pi_\theta(A_t \mid O_t) \\): probability that the current policy assigns to taking action  \\( A_t \\) given observation \\( O_t \\)
+- \\( \rho_t(\theta) \\): ratio between new and old action probability
+- \\( \mathcal{L}^{\text{CLIP}} \\): PPO's clipped policy objective
+- \\( \text{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon) \\): clamps the ratio into \\( [1-\epsilon,1+\epsilon] \\) to prevent overly large policy updates
+- \\( \hat{A}_t \\): advantage estimate at time \\( t \\)
 
 ### Exploration (PPO)
 Exploration comes from:
