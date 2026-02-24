@@ -39,9 +39,12 @@ Reward is calcuate by different aspect, such as penalty on long queue/waiting ti
 We train the agent using Proximal Policy Optimization (PPO) 
 $q_i$. (Schulman, J)
 
+At each PPO iteration:
+Collect n_steps transitions $(O_t, A_t, r_t, O_{t+1})$ using the current policy compute advantage estimates $\hat{A}_t$ optimize the PPO losses for n_epochs epochs over minibatches of size batch_size
+
 PPO uses a clipped policy update. Define the probability ratio:
 ```math
-p_t(\theta)=\frac{{\pi_\theta}(a_s | s_t)}{{\pi_\theta}{\text{old}}(a_s | s_t)}
+p_t(\theta)=\frac{{\pi_\theta}(A_t | O_t)}{{\pi_\theta}{\text{old}}(A_t | O_t)}
 ```
 
 ```math
@@ -53,11 +56,23 @@ p_t(\theta)=\frac{{\pi_\theta}(a_s | s_t)}{{\pi_\theta}{\text{old}}(a_s | s_t)}
 \right]
 ```
 
+- $O_t$: observation in step t
+- $A_t$: action in step t
+- $r_t$: reward in step t
+- $\theta$: current policy
+- ${\pi_\theta}(A_t|O_t)$: probability that the current policy assigns to taking action $A_t$ given observation $O_t$
+- $p_t(\theta)$: ratio between new and old action probability
+- $\mathcal{L}^{\text{CLIP}}$: PPO's clipped policy objective
+- $\text{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon)$: clamps the ratio into $[1-\epsilon,1+\epsilon]$ to prevent overly large policy updates
+- $\hat{A}_t$: advantage estimate at time t
+
 **Code Methods**
 - Environment: `rl_env.py` (`MiniMetroRLEnv`)
 - Observation/state features: `rl_env.py` → `_get_obs()`
 - Reward + termination: `rl_env.py` → `step()`
 - Action operators: `rl_env.py` → `_apply_action()`
+
+
 
 ## Evaluation
 
