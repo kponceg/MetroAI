@@ -4,7 +4,8 @@ title: Status
 ---
 
 ## Project Summary
-We impolement a reinforcement learning agent to play Mini Metro in a custom simulation environment. The environment exposes a Gym-like API to help the agent to oberve the transit system state and choose high level network edit actions from the custom game engine. The goal is to learn a control policy that keeps the system stable for as long as possible while minimizing passenger waiting and station overcrowding. Eventually maximize the surviving time and handling increasing demand wihtout failture.
+We implement a reinforcement learning agent to play Mini Metro in a custom simulation environment. The environment exposes a Gym-like API to help the agent to oberve the transit system state and choose high level network edit actions from the custom game engine. The agent selects high-level network edit actions that includes creating, expanding, and replacing transit lines to manage congestion under growing passenger demand.
+We train a Proximal Policy Optimization (PPO) agent to learn a control policy that maximizes survival time while minimizing passenger waiting and overcrowding. As well as analyzing how action design and reward structure affect system performance and stability.
 
 ## Approach
 Our main algorithm to train an agent to play Mini Metro is Proximal Policy Optimization (PPO). This is an on policy algorithm that learns a neural network policy to approximate an optimal control strategy for metro network editions.
