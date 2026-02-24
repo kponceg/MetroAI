@@ -43,9 +43,9 @@ At each PPO iteration:
 Collect n_steps transitions $(O_t, A_t, r_t, O_{t+1})$ using the current policy compute advantage estimates $\hat{A}_t$ optimize the PPO losses for n_epochs epochs over minibatches of size batch_size
 
 PPO uses a clipped policy update. Define the probability ratio:
-```math
-p_t(\theta)=\frac{{\pi_\theta}(A_t | O_t)}{{\pi_\theta}{\text{old}}(A_t | O_t)}
-```
+
+$p_t(\theta)=\frac{{\pi_\theta}(A_t | O_t)}{{\pi_\theta}{\text{old}}(A_t | O_t)}$
+
 ```math
 \mathcal{L}^{\text{CLIP}}(\theta)=\mathbb{E}_{t}\left[
 \min\Big(
@@ -67,7 +67,7 @@ p_t(\theta)=\frac{{\pi_\theta}(A_t | O_t)}{{\pi_\theta}{\text{old}}(A_t | O_t)}
 
 ### Exploration (PPO)
 Exploration comes from:
-- sampling actions from a stochastic policy $\pi_\theta(a \mid O_t)$ during training 
+- sampling actions from a stochastic policy $\pi_\theta(A_t\mid O_t)$ during training 
 - an entropy bonus controlled by `ent_coef` hyper-parameter, higher vlaue equal to more exploration
 
 Exploration is still present when ent_coef = 0.0, since the policy is stochastic, but the algorithm is less explicitly encouraged to stay exploratory
