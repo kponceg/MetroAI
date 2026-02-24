@@ -66,6 +66,16 @@ p_t(\theta)=\frac{{\pi_\theta}(A_t | O_t)}{{\pi_\theta}{\text{old}}(A_t | O_t)}
 - $\text{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon)$: clamps the ratio into $[1-\epsilon,1+\epsilon]$ to prevent overly large policy updates
 - $\hat{A}_t$: advantage estimate at time t
 
+### Exploration (PPO)
+Exploration comes from:
+- sampling actions from a stochastic policy $\pi_\theta(a \mid O_t)$ during training 
+- an entropy bonus controlled by `ent_coef` hyper-parameter, higher vlaue equal to more exploration
+
+Exploration is still present when ent_coef = 0.0, since the policy is stochastic, but the algorithm is less explicitly encouraged to stay exploratory
+
+### Neural Network
+We use a MLP policy (`MlpPolicy`). For 1D feature observations, SB3’s default is a 2-layer fully-connected network with 64 units per layer for PPO. 
+
 ### Parameter Values
 | Paramter | Value |
 | --- | --- |
