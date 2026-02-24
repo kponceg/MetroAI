@@ -33,6 +33,8 @@ We use discrete high level operatiors, implemeted as parameteried acitons such a
 ### Reward 
 We use reward to enovurages the policy to reduce crowding on stations and increase survial time by prevent overflow.
 
+Reward is calcuate by different aspect, such as penalty on long queue/waiting time/action/remove line/invalid action/terminal or fail, and reward for build new line/ exapnd lines.
+
 ### PPO
 We train the agent using Proximal Policy Optimization (PPO) 
 $q_i$. (Schulman, J)
