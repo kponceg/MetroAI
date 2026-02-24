@@ -1,6 +1,6 @@
 ---
 layout: default
-title:  Team 4
+title:  Team
 ---
 
 # {{ page.title }}
