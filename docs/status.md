@@ -95,7 +95,6 @@ We use a MLP policy (`MlpPolicy`). For 1D feature observations, SB3’s default 
 | clip_range    | 0.2       |
 | verbose       | 1         |
 
----
 
 **Code Methods**
 - Environment: `rl_env.py` (`MiniMetroRLEnv`)
