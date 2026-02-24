@@ -46,14 +46,14 @@ PPO uses a clipped policy update. Define the probability ratio:
 
 $\rho_t(\theta)=\frac{\pi_\theta(A_t|O_t)}{\pi_{\theta_{\text{old}}}(A_t|O_t)}$
 
-```math
+$$
 \mathcal{L}^{\text{CLIP}}(\theta)=\mathbb{E}_{t}\left[
 \min\Big(
 \rho_t(\theta)\hat{A}_t,\;
 \text{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon)\hat{A}_t
 \Big)
 \right]
-```
+$$
 
 - $O_t$: observation in step t
 - $A_t$: action in step t
