@@ -44,7 +44,7 @@ Collect n_steps transitions $(O_t, A_t, r_t, O_{t+1})$ using the current policy 
 
 PPO uses a clipped policy update. Define the probability ratio:
 
-$\rho_t(\theta)=\frac{\pi_\theta(A_t|O_t)}{\pi_{\theta_{\text{old}}}(A_t|O_t)}$
+$\rho_t(\theta)=\frac{\pi_\theta(A_t \mid O_t)}{\pi_{\theta_{\text{old}}}(A_t \mid O_t)}$
 
 $$
 \mathcal{L}^{\text{CLIP}}(\theta)=\mathbb{E}_{t}\left[
