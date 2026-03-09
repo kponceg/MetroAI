@@ -150,6 +150,8 @@ class MiniMetroRLEnv(BaseEnv):
             reward += self.expand_bonus
         elif self._last_action == "remove":
             reward -= self.remove_penalty
+        elif self._last_action == "replace":
+            reward += self.build_bonus
 
         # penalties
         if invalid:
@@ -425,16 +427,44 @@ class MiniMetroRLEnv(BaseEnv):
 
             before = self._num_paths()
 
+            #Backup path so we can restore on failure
+            backup_stations = list(getattr(path_remove, "stations", []))
+            if len(backup_stations) < 2:
+                return False  # can't safely remove/restore a degenerate path
+
+            def _build_path_from_station_list(st_list):
+                w = pm.start_path_on_station(st_list[0])
+                if w is None:
+                    return False
+                creating = pm._creating_or_expanding_path
+                if creating is None:
+                    return False
+
+                # Add intermediate stations
+                for st in st_list[1:]:
+                    creating.add_station_to_path(st)
+
+                # Ensure it ends
+                creating.try_to_end_path_on_station(st_list[-1])
+                return True
+
+            # choose stations to connect (use i,j if valid, else top-2 congested)
+            if 0 <= i < n_stations and 0 <= j < n_stations and i != j:
+                s1, s2 = stations[i], stations[j]
+            else:
+                sorted_st = sorted(stations[:n_stations], key=lambda s: s.occupation, reverse=True)
+                s1, s2 = sorted_st[0], sorted_st[1]
+
+            removed = False
+            created_new = False
+            restored_old = False
+
             try:
+                # 1) Remove old path (free a slot), BUT we have a backup.
                 pm.remove_path(path_remove)
+                removed = True
 
-                # choose stations to connect (use i,j if valid, else top-2 congested)
-                if 0 <= i < n_stations and 0 <= j < n_stations and i != j:
-                    s1, s2 = stations[i], stations[j]
-                else:
-                    sorted_st = sorted(stations[:n_stations], key=lambda s: s.occupation, reverse=True)
-                    s1, s2 = sorted_st[0], sorted_st[1]
-
+                # 2) Try to create the new path
                 w = pm.start_path_on_station(s1)
                 if w is None:
                     return False
@@ -445,18 +475,36 @@ class MiniMetroRLEnv(BaseEnv):
 
                 creating.add_station_to_path(s2)
                 creating.try_to_end_path_on_station(s2)
-
-                after = self._num_paths()
+                created_new = True
 
             except Exception:
                 return False
+
             finally:
+                # Always clear any half-open creation state
                 pm._creating_or_expanding_path = None
 
-            # succeeded if we didn't permanently lose a path
+                # 3) If we removed the old path but failed to create the new one, restore.
+                if removed and not created_new:
+                    try:
+                        # Make sure creating state is clean before restore
+                        pm._creating_or_expanding_path = None
+                        restored_old = _build_path_from_station_list(backup_stations)
+                    except Exception:
+                        restored_old = False
+                    finally:
+                        pm._creating_or_expanding_path = None
+
+            after = self._num_paths()
+
+            # Success if we ended up with at least as many paths as before.
+            # - created_new True => usually after == before
+            # - created_new False + restored_old True => after == before
             if after >= before:
-                self._last_action = "replace"   
+                self._last_action = "replace"
                 return True
+
+            # If we got here, we permanently lost a path
             return False
 
         # ---------------------------------------
