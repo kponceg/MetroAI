@@ -185,17 +185,17 @@ def main():
 
     # option frequency comparison
     plt.figure()
-    cnt_r = np.bincount(np.asarray(random_roll["op_hist"], dtype=int), minlength=4)
-    cnt_p = np.bincount(np.asarray(ppo_roll["op_hist"], dtype=int), minlength=4)
+    cnt_r = np.bincount(np.asarray(random_roll["op_hist"], dtype=int), minlength=5)
+    cnt_p = np.bincount(np.asarray(ppo_roll["op_hist"], dtype=int), minlength=5)
 
-    x = np.arange(4)
+    x = np.arange(5)
     w = 0.35
     plt.bar(x - w/2, cnt_r, width=w, label="Random")
     plt.bar(x + w/2, cnt_p, width=w, label="PPO")
     plt.title("Action op frequency")
-    plt.xlabel("op (0=None, 1=Create, 2=Expand, 3=Remove)")
+    plt.xlabel("op (0=None, 1=Create, 2=Expand, 3=Replace 4=ExpandBeyond)")
     plt.ylabel("count")
-    plt.xticks(x, [0, 1, 2, 3])
+    plt.xticks(x, [0, 1, 2, 3, 4])
     plt.legend()
     plt.show()
 
