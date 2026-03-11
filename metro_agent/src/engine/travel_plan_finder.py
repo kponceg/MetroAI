@@ -42,7 +42,7 @@ class TravelPlanFinder:
                     if passenger.travel_plan:
                         passenger.travel_plan = None
                 continue
-            for passenger in station.passengers:
+            for passenger in station.passengers[:]:
                 if _passenger_has_travel_plan_with_next_path(
                     passenger, self._components.paths
                 ):
@@ -63,12 +63,22 @@ class TravelPlanFinder:
         station: Station,
         passenger: Passenger,
     ) -> None:
+        if station.shape.type == passenger.destination_shape.type:
+            passenger.is_at_destination = True
+            passenger.travel_plan = None
+            if passenger in station.passengers:
+                station.passengers.remove(passenger)
+            self._components.status.score += 1
+            return
+
         assert self._station_nodes_mapping
         possible_dst_stations = self._get_stations_for_shape_type(
             passenger.destination_shape.type
         )
 
         for possible_dst_station in possible_dst_stations:
+            if possible_dst_station == station:
+                continue
             start = self._station_nodes_mapping[station]
             end = self._station_nodes_mapping[possible_dst_station]
             node_path = bfs(start, end)
