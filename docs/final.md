@@ -30,7 +30,18 @@ To make sure the problem is more learnable, we do no expose the raw game UI cont
 
    
 ### Improvements
+We first started by verifying that the environment produced sensible signals under random interaction. Our smoke_test evaluation rolled out random actions and logged metrics such as survival time, congestion, maximum queue, total waiting passenager, and cumulative reward return. This gave us a baseline for how badly the system behaves without learning and also helped us confirm that the environment was working as expected.
+
+After establishing that baseline, the first major improvement was simplifying the action sapce into high level network eddition operatiors instead of directly exposing low-level controls. 
+The second improvement was using a compact observation vector that explicitly describes the system, where includes congestion, converage, and path structure.
+Next we improve our reward system. Rather than only rewarding the score, we added several additional signals to ensure the agent receive denser feedback during training. These include reward on survial longer, increasing score, reducing waiting passengers, and lowering the maximum queue; We also penalities the agent for invalid actions and terminal failture.
+
+Over time, it became clear that one of the main challenges was not just survive longer, but learning to build useful routes before congestion becomes irreversible. We also identified that some parts of the observation may still be more complex than necessary, and one future improvment is to reduce less useful structureal features.
+
 ### Baseline approach
+The baseline approaches was to evaluate the environment under random actions. In this setup, the agent samples uniformly from the action sapce but does not use any learned strategy. This baseline is useful becasue it establishes a lower bound; if PPO can not outperform random editing, then it is not actually learning meaningful control. 
+
+The main advantage of this baseline is that it requires to training and provides a simple reference point for comparison. However, it does not adapt to congestion, oftern wastes the resources, and frequently produces invalid edits.
 ### PPO
 
 ## Evaluation
