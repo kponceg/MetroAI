@@ -34,7 +34,11 @@ To make sure the problem is more learnable, we do no expose the raw game UI cont
 ### PPO
 
 ## Evaluation
-
+<img src="myplot1.png" width="300" height="300">
+<img src="myplot2.png" width="300" height="300">
+<img src="myplot3.png" width="300" height="300">
+<img src="myplot4.png" width="300" height="300">
+<img src="myplot5.png" width="300" height="300">
 ## Resources Used
 
 We used the following resources during development:
