@@ -2,7 +2,7 @@
 layout: default
 title: Final Report
 ---
-[demo video](metro_agent_play.mov)
+[demo video](metro_agent_play.mp4)
 
 
 ## Project Summary
@@ -42,7 +42,24 @@ Over time, it became clear that one of the main challenges was not just survive 
 The baseline approaches was to evaluate the environment under random actions. In this setup, the agent samples uniformly from the action sapce but does not use any learned strategy. This baseline is useful becasue it establishes a lower bound; if PPO can not outperform random editing, then it is not actually learning meaningful control. 
 
 The main advantage of this baseline is that it requires to training and provides a simple reference point for comparison. However, it does not adapt to congestion, oftern wastes the resources, and frequently produces invalid edits.
+
 ### PPO
+We used PPO from Stable-Baselines3 with an MLP poliocy. PPO is well-suited for this task because it typically performs more consistently than value-based methods in environments with shaping rewards and structured observation. Since the task requires sequential decision-making with delayed consequences, PPO’s pruning strategy updates and advantage-based learning provide a more reliable training process than purely greedy action-value learners. 
+
+Our PPO model uses MlpPolicy with separate policy and value networks, each with two hidden layers of size 256 and Tanh activations. The main hyperparameters are 
+`learning_rate = 3e-4`, 
+`n_steps = 2048`, 
+`batch_size = 256`, 
+`n_epochs = 10`, 
+`gae_lambda = 0.95`, 
+`clip_range = 0.2`, 
+`ent_coef = 0.03`, and 
+`vf_coef = 0.5`. 
+We continue to train and, save checkpoints every 50,000 steps and also hard save of full model and normalization statistics every 100,000 steps. This setup lets us resume long-running training while keeping evaluation consistent with the training distribution.
+
+The reward function is one of the most critical components of our PPO architecture. In each iteration step, the agent receives a base survival reward; it receives an additional reward when the score improves; and it receives yet another reward when the total waiting time or maximum queue length decreases. At the same time, the agent is penalized for situations such as excessive total waiting time, severe congestion, maintaining too many paths, performing high-cost operations, or selecting invalid operations. Terminal failures result in significant negative rewards. This design aims to balance short-term congestion control with long-term network quality, while preventing agents from adopting behaviors that appear simple but are eventually not usefull.
+
+Within our framework, the main advantage of PPO is that it can achieve stable policy improvement under complex reward functions and constrained action spaces. It can learn from normalized observation data and adjust its behavior over the course of many episodes. Its main limitations are that it is highly sensitive to the quality of observations and reward design. If the state representation omits critical information, or if the reward places excessive emphasis on shaping terms, the policy may converge to incorrect behaviors.
 
 ## Evaluation
 
