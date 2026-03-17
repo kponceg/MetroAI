@@ -5,7 +5,7 @@ title: Final Report
 
 
 
-## Project Summary:
+## Project Summary
 
 We implemented a reinforcement learning agent to play Mini Metro in a custom simulation environment. The environment exposes a Gym-like API that allows the agent to observe the transit system state and choose high-level network editing actions from the custom game engine. These actions include creating, expanding, and replacing transit lines in order to manage congestion under growing passenger demand.
 
@@ -15,11 +15,11 @@ We train a **Proximal Policy Optimization (PPO)** agent to learn a control polic
 
 For evaluation we compare the trained PPO agent against a random baseline policy that selects actions uniformly. By comparing these two policies we can determine whether the learned policy improves system performance beyond naive decision making.
 
-## Approach:
+## Approach
 
-## Evaluation:
+## Evaluation
 
-## Resources Used:
+## Resources Used
 
 We used the following resources during development:
 
