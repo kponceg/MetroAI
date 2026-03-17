@@ -37,22 +37,37 @@ To make sure the problem is more learnable, we do no expose the raw game UI cont
 <img src="myplot1.png" width="300" height="300">
 
 **Total Waiting Passengers**
+The initial plot presents the aggregate waiting time, serving as an indicator of the agent's efficacy in managing passenger flow throughout the observed period. The data reveal that both agents exhibit an upward trend in total waiting time, an expected pattern given the environment's escalating difficulty. However, the evaluation indicates that the PPO agent generally has a longer total waiting time than the random model.
+
+This suggests that, despite learning a policy, the PPO agent is not effectively minimizing congestion. A conclusion we reached is that the reward function tends to develop a bias toward actions that do not directly affect the flow of waiting passengers. This shows a common challenge in reinforcement learning, which is a misalignment between reward design and the expected system behavior.
 
 <img src="myplot2.png" width="300" height="300">
 
 **Maximum Queue Length**
+Maximum queue length indicates how severe congestion gets at its worst point in the system, which is important because high values usually mean the system is close to failing. Looking at the results, both the PPO agent and the random agent behave pretty similarly. In both cases, the maximum queue keeps increasing over time and eventually reaches a similar critical level. The PPO agent doesn’t really do a better job than random at keeping the peak congestion levels under control.
+
+This suggests that the agent isn’t effectively focusing on the stations that need the most attention or preventing bottlenecks from forming. Ideally, a stronger policy would keep those peaks lower or at least delay when they happen, but we don’t really see that here.
 
 <img src="myplot3.png" width="300" height="300">
 
 **Invalid Action Rate**
+Invalid actions are when the agent tries to do something that isn’t allowed, like making a path change that doesn’t make sense. When this happens a lot, it usually means the agent doesn’t really understand how the environment works yet. This is actually where PPO improves the most compared to random. The random agent keeps making invalid moves most of the time, while the PPO agent brings that down a lot to about 30% by the end.
+
+So even though PPO isn’t necessarily better at reducing congestion, it clearly learns what actions are valid and avoids doing obviously bad or impossible things. That’s a good sign that the agent is starting to understand the structure of the environment, even if it hasn’t fully figured out how to optimize performance yet.
 
 <img src="myplot4.png" width="300" height="300">
 
 **Cumulative Return over time**
+Cumulative reward indicates how well the agent is performing overall under the reward system we designed. From the graph, the PPO agent consistently outperforms the random agent, indicating it is actually learning and optimizing for the rewards we provided. At the same time, both curves continue to decline over time, indicating that the environment becomes harder and penalties start to outweigh any positive rewards.
+
+The important part here is that the PPO agent is learning, but it’s learning exactly what we told it to optimize, not necessarily what we actually care about. In this case, that means it follows the reward function well, but that reward function doesn’t fully reflect the real goal of reducing congestion. That gap between the reward and the true objective is one of the biggest limitations of our approach.
 
 <img src="myplot5.png" width="300" height="300">
 
 **Reward History**
+The reward history shows how much reward the agent gets at each step, which helps us understand how stable its behavior is and how it’s learning over time. Looking at the graph, both agents have pretty noisy rewards, with random spikes at some points. The PPO agent looks a bit more consistent at the beginning. Still, over time, both agents end up with sharp drops in reward near the end of the episode, which usually means the system is failing, for example, overcrowded stations.
+
+Overall, this tells us a few things. The environment itself is pretty unpredictable and hard to control; the agent never fully learns how to avoid those failure states, and by the end, most of the rewards are actually penalties rather than positive gains.
 
 ## Resources Used
 
