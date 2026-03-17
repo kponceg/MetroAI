@@ -34,6 +34,18 @@ To make sure the problem is more learnable, we do no expose the raw game UI cont
 ### PPO
 
 ## Evaluation
+
+To see how well our reinforcement learning approach actually performed, we compared our trained PPO agent to a simple random action baseline in our custom MiniMetro environment. We kept everything consistent between the two, same setup, the same timestep limit, and the same observations, so the comparison would be fair. The PPO agent was trained using Stable-Baselines3, with a reward function that considers factors like queue sizes, how many passengers are waiting, survival bonuses, and penalties for invalid actions.
+
+For our evaluation, we focused on a few key metrics:
+	•	Total waiting passengers over time
+	•	Maximum queue length
+	•	Cumulative return over time
+	•	Reward history
+	•	Invalid action rate
+
+These metrics give us a good overall picture. It shows us how the system is performing and also how well the agent is interacting with the environment.
+
 <img src="myplot1.png" width="300" height="300">
 
 **Total Waiting Passengers**
