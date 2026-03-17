@@ -35,10 +35,25 @@ To make sure the problem is more learnable, we do no expose the raw game UI cont
 
 ## Evaluation
 <img src="myplot1.png" width="300" height="300">
+
+**Total Waiting Passengers**
+
 <img src="myplot2.png" width="300" height="300">
+
+**Maximum Queue Length**
+
 <img src="myplot3.png" width="300" height="300">
+
+**Invalid Action Rate**
+
 <img src="myplot4.png" width="300" height="300">
+
+**Cumulative Return over time**
+
 <img src="myplot5.png" width="300" height="300">
+
+**Reward History**
+
 ## Resources Used
 
 We used the following resources during development:
