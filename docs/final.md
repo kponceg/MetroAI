@@ -25,13 +25,13 @@ To make sure the problem is more learnable, we do no expose the raw game UI cont
 * Do Nothing
 * Creating a new path
 * Expanding a path
-* removing and replacing a path
+* Removing and replacing a path
 * Guided expansion action that connects a high demand station to an existing path
 
    
-# Improvements
-# Baseline approach
-# PPO
+### Improvements
+### Baseline approach
+### PPO
 
 ## Evaluation
 
