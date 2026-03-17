@@ -24,11 +24,11 @@ class MiniMetroRLEnv(BaseEnv):
 
                  # TODO: tune reward weights
                  w_waiting = 0.01,
-                 build_bonus = 0.5, # reward for building a path
+                 build_bonus = 0.3, # reward for building a path
                  expand_bonus = 1.0,
-                 remove_penalty = 0.1,
-                 action_cost = 0.01,
-                 path_cost = 0.01,
+                 remove_penalty = 0.5,
+                 action_cost = 0.05,
+                 path_cost = 0.05,
 
                  survival_reward = 0.1,
                  w_score = 1.0,
@@ -70,6 +70,14 @@ class MiniMetroRLEnv(BaseEnv):
         self.path_cost = path_cost
         self.survival_reward = survival_reward
 
+        self.edit_cooldown_ms = 1500
+        self.remove_cooldown_ms = 4000
+        self.min_path_age_ms = 5000
+
+        self._edit_cooldown_left_ms = 0
+        self._remove_cooldown_left_ms = 0
+        self._path_birth_ms = {}
+
         self.invalid_action_penalty = invalid_action_penalty
         self.terminal_fail_penalty = terminal_fail_penalty
         self.timeout_ms = 10000 # used to determine game end by overflow; 10 sec
@@ -86,13 +94,15 @@ class MiniMetroRLEnv(BaseEnv):
         # --- modified the new observation space
         # station features:
         # 1) queue ratio: congest rate
-        # 2) degree norm: connection info
+        # abandoned 2) degree norm: connection info
         # 3) on_any_path: station on any path
-        # 4) is_endpoint: is this station at the end of the path
-        # 5) warning_flag: almost full, need action
-        # 6) critical_flag: is full, need action immediately
-        # destination shape distribution at this station
-        station_feat_dim = (6 + self.num_dest_shape_types) * self.max_stations
+        # abandoned 4) is_endpoint: is this station at the end of the path
+        # abandoned 5) warning_flag: almost full, need action
+        # abandoned 6) critical_flag: is full, need action immediately
+        # 7) destination shape distribution at this station
+        # 8) station shape
+        station_feat_dim = (2 + 2 * self.num_dest_shape_types) *  self.max_stations #
+        # station_feat_dim = (6 + self.num_dest_shape_types) * self.max_stations
 
         # path features for each path slot:
         # 1) path_exists
@@ -100,13 +110,14 @@ class MiniMetroRLEnv(BaseEnv):
         # 3) end_idx_norm : with start idx norm, tells agent where is the path
         # 4) path_len_norm : long or short path
         # 5) path_load_norm : tell the agent the path is busy or not
-        # 6) can_expand_left: can path extend to its left?
-        # 7) can_expand_right: can path extend to its left?
-        # 8) left_endpoint_queue_ratio： how congested are the left and right ends
-        # 9) right_endpoint_queue_ratio
-        # 10) left_endpoint_degree_norm： whats the degree of left and right ends
-        # 11) right_endpoint_degree_norm
-        path_feat_dim = 11 * self.max_paths
+        # abandoned 6) can_expand_left: can path extend to its left?
+        # abandoned 7) can_expand_right: can path extend to its left?
+        # abandoned 8) left_endpoint_queue_ratio： how congested are the left and right ends
+        # abandoned 9) right_endpoint_queue_ratio
+        # abandoned 10) left_endpoint_degree_norm： whats the degree of left and right ends
+        # abandoned 11) right_endpoint_degree_norm
+        path_feat_dim = 5 * self.max_paths #
+        # path_feat_dim = 11 * self.max_paths
 
         # global features:
         # 1) num_paths_norm : current network size
@@ -122,11 +133,14 @@ class MiniMetroRLEnv(BaseEnv):
         higher_bound = np.array(
             # station features
             [self.occupancy_rate_capped] * self.max_stations +  # queue ratio
-            [1.0] * self.max_stations +  # degree norm
+            #[1.0] * self.max_stations +  # degree norm
             [1.0] * self.max_stations +  # on_any_path
-            [1.0] * self.max_stations +  # is_endpoint
-            [1.0] * self.max_stations +  # warning
-            [1.0] * self.max_stations +  # critical
+
+            #[1.0] * self.max_stations +  # is_endpoint
+            #[1.0] * self.max_stations +  # warning
+            #[1.0] * self.max_stations +  # critical
+
+            [1.0] * self.max_stations * self.num_dest_shape_types + # station self shap
             [1.0] * self.max_stations * self.num_dest_shape_types +  # destination-shape distribution
 
             # path features
@@ -135,12 +149,13 @@ class MiniMetroRLEnv(BaseEnv):
             [1.0] * self.max_paths +  # end idx norm
             [1.0] * self.max_paths +  # path len norm
             [1.0] * self.max_paths +  # path load norm
-            [1.0] * self.max_paths +  # can_expand_left
-            [1.0] * self.max_paths +  # can_expand_right
-            [self.occupancy_rate_capped] * self.max_paths +  # left endpoint queue
-            [self.occupancy_rate_capped] * self.max_paths +  # right endpoint queue
-            [1.0] * self.max_paths +  # left endpoint degree
-            [1.0] * self.max_paths +  # right endpoint degree
+
+            #[1.0] * self.max_paths +  # can_expand_left
+            #[1.0] * self.max_paths +  # can_expand_right
+            #[self.occupancy_rate_capped] * self.max_paths +  # left endpoint queue
+            #[self.occupancy_rate_capped] * self.max_paths +  # right endpoint queue
+            #[1.0] * self.max_paths +  # left endpoint degree
+            #[1.0] * self.max_paths +  # right endpoint degree
 
             # global features
             [1.0, 1.0, 1.0, self.occupancy_rate_capped, self.occupancy_rate_capped, 1.0],
@@ -170,6 +185,10 @@ class MiniMetroRLEnv(BaseEnv):
         self._station_ids.clear()
         self._timeout_ms_by_station_id = {st.id: 0 for st in self.engine._components.stations}
         self._last_action = "none"
+
+        self._edit_cooldown_left_ms = 0
+        self._remove_cooldown_left_ms = 0
+        self._path_birth_ms = {}
 
         obs = self._get_obs()
         info = self._get_info()
@@ -208,54 +227,67 @@ class MiniMetroRLEnv(BaseEnv):
         total_waiting = info["total_waiting"]
         score = float(info["score"])
         num_paths = info.get("num_paths", 0)
-        num_critical = int(info["num_critical"])
-        num_warning = int(info["num_warning"])
+        #num_critical = int(info["num_critical"])
+        #num_warning = int(info["num_warning"])
         max_queue = float(info["max_queue"])
 
-        delta_maxq = self.last_max_queue - max_queue
-        delta_maxq = float(np.clip(delta_maxq, -2.0, 2.0))
+        #delta_maxq = self.last_max_queue - max_queue
+        #delta_maxq = float(np.clip(delta_maxq, -2.0, 2.0))
 
         # reward on reduce waiting
-        delta_wait = self.last_total_waiting - total_waiting # less people waiting to more rewards
-        delta_wait = float(np.clip(delta_wait, -5.0, 5.0))
+        #delta_wait = self.last_total_waiting - total_waiting # less people waiting to more rewards
+        #delta_wait = float(np.clip(delta_wait, -5.0, 5.0))
         delta_score = score - self.last_score
 
+        current_paths = self._sorted_paths()[:self.max_paths]
+        avg_path_len = np.mean([self._path_len_norm(p) for p in current_paths]) if len(current_paths) > 0 else 0.0
+
+
         reward = 0.0
-        reward += self.survival_reward
-        reward += self.w_score * delta_score
-        reward += self.w_queue_delta * delta_wait
+        reward += delta_score
+        reward -= 0.02 * total_waiting
+        reward -= 0.1 * avg_path_len
 
-        reward -= self.w_waiting * total_waiting
-        reward -= self.w_critical * num_critical
-        reward -= self.path_cost * num_paths
+        #reward += self.survival_reward
+        #reward += self.w_score * delta_score
+        #reward += self.w_queue_delta * delta_wait
 
-        reward += 0.2 * delta_maxq
+        #reward -= self.w_waiting * total_waiting
+        #reward -= self.w_critical * num_critical
+        #reward -= self.path_cost * num_paths
+
+        #reward += 0.2 * delta_maxq
 
         # regularization cost
-        if act != 0:
-            reward -= self.action_cost
+        #if act != 0:
+        #    reward -= self.action_cost
 
         # global penalty on congestion
-        reward -= 0.03 * num_warning
+        #reward -= 0.03 * num_warning
 
         # a little more when agent choose to do nothing
-        if act == 0 and (num_warning > 0 or num_critical > 0):
-            reward -= 0.1
+        #if act == 0 and (num_warning > 0 or num_critical > 0):
+        #    reward -= 0.5
+        if act == 0 and total_waiting > 0:
+            reward -= 0.5
 
         # reward/penalty on operations
-        if self._last_action == "create":
-            reward += self.build_bonus
-        elif self._last_action == "expand":
-            reward += self.expand_bonus
-        elif self._last_action == "remove":
-            reward -= self.remove_penalty
+        #if self._last_action == "create":
+        #    reward += self.build_bonus
+        #elif self._last_action == "expand":
+        #    reward += self.expand_bonus
+        #elif self._last_action == "remove":
+        #    reward -= self.remove_penalty
 
-        reward -= self.action_cost
+        #reward -= self.action_cost
 
         # penalties
         if invalid:
-            reward -= self.invalid_action_penalty
-            reward -= 0.05 * self.invalid_streak
+            reward -= 1
+            if act == 1:
+                reward -= 0.5
+        #    reward -= self.invalid_action_penalty
+        #    reward -= 0.05 * self.invalid_streak
 
         if terminated:
             reward -= self.terminal_fail_penalty
@@ -327,6 +359,12 @@ class MiniMetroRLEnv(BaseEnv):
         denom = max(1.0, float(len(sts) * self.station_capacity))
         return min(total_occ / denom, 1.0)
 
+    def _path_len_norm(self, path) -> float:
+        sts = getattr(path, "stations", [])
+        if not sts:
+            return 0.0
+        return min(len(sts) / max(1.0, float(self.max_stations)), 1.0)
+
     def _advance_game(self, total_ms: int) -> None:
         remaining = int(total_ms)
         while remaining > 0:
@@ -334,6 +372,9 @@ class MiniMetroRLEnv(BaseEnv):
             self.engine.increment_time(dt)
             self.elapsed_ms += dt
             self._update_overflow_timers(dt)
+
+            self._edit_cooldown_left_ms = max(0, self._edit_cooldown_left_ms - dt)
+            self._remove_cooldown_left_ms = max(0, self._remove_cooldown_left_ms - dt)
             remaining -= dt
 
     def _update_overflow_timers(self, dt_ms: int) -> None:
@@ -393,6 +434,25 @@ class MiniMetroRLEnv(BaseEnv):
         except Exception:
             pass
         return paths
+
+    def _path_key(self, path):
+        return getattr(path, "id", id(path))
+
+    def _path_is_busy(self, path) -> bool:
+        for metro in getattr(path, "metros", []):
+            # there are passengers on the train
+            if getattr(metro, "passengers", None):
+                if len(metro.passengers) > 0:
+                    return True
+            # metro is still on the way
+            if getattr(metro, "current_station", None) is None:
+                return True
+        return False
+
+    def _station_self_shape(self, station) -> list[float]:
+        st_type = station.shape.type
+        return [1.0 if st_type == shape_type else 0.0 for shape_type in self.dest_shape_types]
+
     # -------------------------
 
     def _get_obs(self):
@@ -403,13 +463,16 @@ class MiniMetroRLEnv(BaseEnv):
 
         # station features
         queues = [] # occ_rate
-        degrees = []
+        #degrees = []
         on_path = []
-        endpoints = []
-        warning_flags = []
-        critical_flags = []
+
+        #endpoints = []
+        #warning_flags = []
+        #critical_flags = []
+
         # one list per destination shape type
         dest_shape_features = [[] for _ in range(self.num_dest_shape_types)]
+        self_shape_features = [[] for _ in range(self.num_dest_shape_types)]
 
         for st in stations:
             occ = float(st.occupation)
@@ -417,27 +480,34 @@ class MiniMetroRLEnv(BaseEnv):
             r = occ / capacity if capacity > 0 else 0.0
 
             queues.append(min(r, self.occupancy_rate_capped))
-            degrees.append(self._station_degree(st) / max(1.0, float(self.max_paths)))
+            #degrees.append(self._station_degree(st) / max(1.0, float(self.max_paths)))
             on_path.append(self._station_on_any_path(st))
-            endpoints.append(self._station_is_endpoint(st))
-            warning_flags.append(1.0 if occ >= self.warning_ratio * capacity else 0.0)
-            critical_flags.append(1.0 if occ >= capacity else 0.0)
+
+            #endpoints.append(self._station_is_endpoint(st))
+            #warning_flags.append(1.0 if occ >= self.warning_ratio * capacity else 0.0)
+            #critical_flags.append(1.0 if occ >= capacity else 0.0)
             dest_dist = self._station_dest_shape_distribution(st)
             for k, value in enumerate(dest_dist):
                 dest_shape_features[k].append(value)
+
+            self_shape = self._station_self_shape(st)
+            for k, value in enumerate(self_shape):
+                self_shape_features[k].append(value)
 
             max_queue = max(max_queue, occ)
 
         pad = self.max_stations - len(stations) # padding
         if pad >0:
             queues.extend([0.0] * pad)
-            degrees.extend([0.0] * pad)
+            #degrees.extend([0.0] * pad)
             on_path.extend([0.0] * pad)
-            endpoints.extend([0.0] * pad)
-            warning_flags.extend([0.0] * pad)
-            critical_flags.extend([0.0] * pad)
+
+            #endpoints.extend([0.0] * pad)
+            #warning_flags.extend([0.0] * pad)
+            #critical_flags.extend([0.0] * pad)
             for k in range(self.num_dest_shape_types):
                 dest_shape_features[k].extend([0.0] * pad)
+                self_shape_features[k].extend([0.0] * pad)
 
         # path features
         path_exists = []
@@ -445,12 +515,13 @@ class MiniMetroRLEnv(BaseEnv):
         path_end_idx = []
         path_len = []
         path_load = []
-        can_expand_left = []
-        can_expand_right = []
-        left_endpoint_queue = []
-        right_endpoint_queue = []
-        left_endpoint_degree = []
-        right_endpoint_degree = []
+
+        #can_expand_left = []
+        #can_expand_right = []
+        #left_endpoint_queue = []
+        #right_endpoint_queue = []
+        #left_endpoint_degree = []
+        #right_endpoint_degree = []
 
         for p in paths:
             sts = getattr(p, "stations", [])
@@ -460,12 +531,13 @@ class MiniMetroRLEnv(BaseEnv):
                 path_end_idx.append(0.0)
                 path_len.append(0.0)
                 path_load.append(0.0)
-                can_expand_left.append(0.0)
-                can_expand_right.append(0.0)
-                left_endpoint_queue.append(0.0)
-                right_endpoint_queue.append(0.0)
-                left_endpoint_degree.append(0.0)
-                right_endpoint_degree.append(0.0)
+
+                #can_expand_left.append(0.0)
+                #can_expand_right.append(0.0)
+                #left_endpoint_queue.append(0.0)
+                #right_endpoint_queue.append(0.0)
+                #left_endpoint_degree.append(0.0)
+                #right_endpoint_degree.append(0.0)
                 continue
 
             start_st = sts[0]
@@ -477,14 +549,12 @@ class MiniMetroRLEnv(BaseEnv):
             path_len.append(min(len(sts) / max(1.0, float(self.max_stations)), 1.0))
             path_load.append(self._path_load_norm(p))
 
-            can_expand_left.append(self._path_can_expand_from_anchor(p, start_st))
-            can_expand_right.append(self._path_can_expand_from_anchor(p, end_st))
-
-            left_endpoint_queue.append(self._station_queue_ratio(start_st))
-            right_endpoint_queue.append(self._station_queue_ratio(end_st))
-
-            left_endpoint_degree.append(self._station_degree_norm(start_st))
-            right_endpoint_degree.append(self._station_degree_norm(end_st))
+            #can_expand_left.append(self._path_can_expand_from_anchor(p, start_st))
+            #can_expand_right.append(self._path_can_expand_from_anchor(p, end_st))
+            #left_endpoint_queue.append(self._station_queue_ratio(start_st))
+            #right_endpoint_queue.append(self._station_queue_ratio(end_st))
+            #left_endpoint_degree.append(self._station_degree_norm(start_st))
+            #right_endpoint_degree.append(self._station_degree_norm(end_st))
 
         pad_p = self.max_paths - len(paths)
         if pad_p > 0:
@@ -493,12 +563,13 @@ class MiniMetroRLEnv(BaseEnv):
             path_end_idx.extend([0.0] * pad_p)
             path_len.extend([0.0] * pad_p)
             path_load.extend([0.0] * pad_p)
-            can_expand_left.extend([0.0] * pad_p)
-            can_expand_right.extend([0.0] * pad_p)
-            left_endpoint_queue.extend([0.0] * pad_p)
-            right_endpoint_queue.extend([0.0] * pad_p)
-            left_endpoint_degree.extend([0.0] * pad_p)
-            right_endpoint_degree.extend([0.0] * pad_p)
+
+            #can_expand_left.extend([0.0] * pad_p)
+            #can_expand_right.extend([0.0] * pad_p)
+            #left_endpoint_queue.extend([0.0] * pad_p)
+            #right_endpoint_queue.extend([0.0] * pad_p)
+            #left_endpoint_degree.extend([0.0] * pad_p)
+            #right_endpoint_degree.extend([0.0] * pad_p)
 
         # global features
         num_paths = self._num_paths()
@@ -518,23 +589,24 @@ class MiniMetroRLEnv(BaseEnv):
 
         return np.array(
             queues +
-            degrees +
+            #degrees +
             on_path +
-            endpoints +
-            warning_flags +
-            critical_flags +
+            #endpoints +
+            #warning_flags +
+            #critical_flags +
+            sum(self_shape_features, []) +
             sum(dest_shape_features, []) +
             path_exists +
             path_start_idx +
             path_end_idx +
             path_len +
             path_load +
-            can_expand_left +
-            can_expand_right +
-            left_endpoint_queue +
-            right_endpoint_queue +
-            left_endpoint_degree +
-            right_endpoint_degree +
+            #can_expand_left +
+            #can_expand_right +
+            #left_endpoint_queue +
+            #right_endpoint_queue +
+            #left_endpoint_degree +
+            #right_endpoint_degree +
             [num_paths_norm, paths_left_norm, spawn_progress, max_queue_ratio, mean_queue_ratio, num_unserved_stations_norm],
             dtype=np.float32
         )
@@ -619,6 +691,8 @@ class MiniMetroRLEnv(BaseEnv):
             # high demand + low degree first
             return (-float(st.occupation), self._station_degree(st))
 
+
+
         pm = self.engine.path_manager
         stations = self._sorted_stations()
         paths = self._sorted_paths()
@@ -633,6 +707,7 @@ class MiniMetroRLEnv(BaseEnv):
 
         # ---------------------------------------
         # Action 1: create new connection between 2 most congested stations
+        # ---------------------------------------
         if action_id == 1:
             if len(paths) >= pm.max_num_paths:
                 return False
@@ -683,15 +758,19 @@ class MiniMetroRLEnv(BaseEnv):
                         pm._creating_or_expanding_path = None
 
                     if after > before: # true if new line has created
+                        new_path = max(self.engine._components.paths, key=lambda p: getattr(p, "path_order", 0))
+                        self._path_birth_ms[self._path_key(new_path)] = self.elapsed_ms
+                        self._edit_cooldown_left_ms = self.edit_cooldown_ms
                         self._last_action = "create"
                         return True
 
             # no legal creation found then fallback to action 0
-            self._last_action = "none"
-            return True
+            # self._last_action = "none"
+            return False
 
         # ---------------------------------------
         # Action 2: extend busiest path toward most congested station
+        # ---------------------------------------
         if action_id == 2:
             if n_paths == 0 or n_stations < 2:
                 return False
@@ -741,6 +820,7 @@ class MiniMetroRLEnv(BaseEnv):
                     pm._creating_or_expanding_path = None
 
                 if len(chosen_path.stations) > before_len:
+                    self._edit_cooldown_left_ms = self.edit_cooldown_ms
                     self._last_action = "expand"
                     return True
 
@@ -751,12 +831,26 @@ class MiniMetroRLEnv(BaseEnv):
             if n_paths == 0 or n_stations < 2:
                 return False
 
+            if self._edit_cooldown_left_ms > 0:
+                return False
+
+            if self._remove_cooldown_left_ms > 0:
+                return False
+
             # choose a path to remove:
             # use i if valid, otherwise remove lowest-load path
             if 0 <= i < n_paths:
                 path_remove = paths[i]
             else:
                 path_remove = min(paths, key=path_load)
+
+            path_age = self.elapsed_ms - self._path_birth_ms.get(self._path_key(path_remove), self.elapsed_ms)
+
+            if path_age < self.min_path_age_ms:
+                return False
+
+            if self._path_is_busy(path_remove):
+                return False
 
             before = self._num_paths()
 
@@ -834,6 +928,8 @@ class MiniMetroRLEnv(BaseEnv):
             # - created_new True => usually after == before
             # - created_new False + restored_old True => after == before
             if created_new and after >= before:
+                self._remove_cooldown_left_ms = self.remove_cooldown_ms
+                self._edit_cooldown_left_ms = self.edit_cooldown_ms
                 self._last_action = "remove"
                 return True
 
@@ -843,10 +939,10 @@ class MiniMetroRLEnv(BaseEnv):
         # ---------------------------------------
         # Action 4: x
         # i/j are soft hints only; if they are bad, we auto-search a legal expansion.
+        # ---------------------------------------
         if action_id == 4:
             if n_paths == 0 or n_stations == 0:
-                self._last_action = "none"
-                return True  # fallback to no-op, not invalid
+                return False
 
             # candidate paths
             path_candidates = []
@@ -909,5 +1005,6 @@ class MiniMetroRLEnv(BaseEnv):
                             return True
 
             # no legal guided expansion found -> fallback to action 0
-            self._last_action = "none"
-            return True
+            #self._last_action = "none"
+            #return True
+            return False
