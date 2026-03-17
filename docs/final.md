@@ -28,6 +28,14 @@ To make sure the problem is more learnable, we do no expose the raw game UI cont
 * Removing and replacing a path
 * Guided expansion action that connects a high demand station to an existing path
 
+### Observation Space
+This observation is a compact feature vector. It contains three types of features: station-level, path-level, and global features. 
+
+For each station, the agent observes information such as the queue ratio, normalized occupancy, whether the station is already on a path, as well as the distribution of passenger destinations at that station. 
+
+For each path, the observation includes information such as whether the path exists, normalized origin and destination indices, normalized path length, normalized path load, and queue and degree information for both endpoints. 
+
+Global features summarize the network status through the number of active paths, remaining path budget, passenger generation progress, maximum queue ratio, average queue ratio, and the proportion of unserved stations. 
    
 ### Improvements
 We first started by verifying that the environment produced sensible signals under random interaction. Our smoke_test evaluation rolled out random actions and logged metrics such as survival time, congestion, maximum queue, total waiting passenager, and cumulative reward return. This gave us a baseline for how badly the system behaves without learning and also helped us confirm that the environment was working as expected.
@@ -43,19 +51,62 @@ The baseline approaches was to evaluate the environment under random actions. In
 
 The main advantage of this baseline is that it requires to training and provides a simple reference point for comparison. However, it does not adapt to congestion, oftern wastes the resources, and frequently produces invalid edits.
 
+### Reward Design
+The reward function is one of the most critical components of our method. At each step, the agent receives a small survival reward; it receives additional rewards when the game score increases; and it also receives rewards when the system reduces the total number of waiting passengers or decreases the maximum queue length. 
+
+At the same time, the agent is penalized for situations such as excessively high total waiting numbers, severe congestion, maintaining too many paths, reaching warning-level congestion, excessively high action costs, invalid actions, or terminal failures. We have also incorporated subtle incentives for specific actions: creating new paths yields a reward, extending paths yields a higher reward, while removing paths results in a penalty. 
+
+This design not only encourages the agent to prolong its survival but also motivates it to actively alleviate congestion and avoid wasting actions on invalid or harmful edits.
+
+However, we have observed that simply adding rewards for various scenarios may increase the overall complexity of the system. Therefore, in our latest training, we removed some rewards and retained only those related to score, survival time, total waiting passenger and termination. Unfortunately, we didn’t have enough time to verify whether this approach, reduce the complxity of the reward system, could lead to better learning.
+
 ### PPO
+We train the agent using Proximal Policy Optimization (PPO) (Schulman, J)
+
 We used PPO from Stable-Baselines3 with an MLP poliocy. PPO is well-suited for this task because it typically performs more consistently than value-based methods in environments with shaping rewards and structured observation. Since the task requires sequential decision-making with delayed consequences, PPO’s pruning strategy updates and advantage-based learning provide a more reliable training process than purely greedy action-value learners. 
 
-Our PPO model uses MlpPolicy with separate policy and value networks, each with two hidden layers of size 256 and Tanh activations. The main hyperparameters are 
-`learning_rate = 3e-4`, 
-`n_steps = 2048`, 
-`batch_size = 256`, 
-`n_epochs = 10`, 
-`gae_lambda = 0.95`, 
-`clip_range = 0.2`, 
-`ent_coef = 0.03`, and 
-`vf_coef = 0.5`. 
-We continue to train and, save checkpoints every 50,000 steps and also hard save of full model and normalization statistics every 100,000 steps. This setup lets us resume long-running training while keeping evaluation consistent with the training distribution.
+At each PPO iteration:
+Collect n_steps transitions \( (O_t, A_t, r_t, O_{t+1}) \) using the current policy compute advantage estimates $\hat{A}_t$ optimize the PPO losses for n_epochs epochs over minibatches of size batch_size
+
+PPO uses a clipped policy update. Define the probability ratio:
+
+$$
+\rho_t(\theta)=\frac{\pi_\theta(A_t \mid O_t)}{\pi_{\theta_{\text{old}}}(A_t \mid O_t)}
+$$
+
+$$
+\mathcal{L}^{\text{CLIP}}(\theta)=\mathbb{E}_{t}\left[
+\min\Big(
+\rho_t(\theta)\hat{A}_t,\;
+\text{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon)\hat{A}_t
+\Big)
+\right]
+$$
+
+- $( O_t )$ : observation in step $( t )$
+- $( A_t )$: action in step \( t \)
+- $( r_t )$: reward in step \( t \)
+- $( \theta \)$: current policy
+- $( \pi_\theta(A_t \mid O_t) \)$: probability that the current policy assigns to taking action $\( A_t \)$ given observation $\( O_t \)$
+- $( \rho_t(\theta) \)$: ratio between new and old action probability
+- $( \mathcal{L}^{\text{CLIP}} \)$: PPO's clipped policy objective
+- $( \text{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon) \)$: clamps the ratio into $\( [1-\epsilon,1+\epsilon] \)$ to prevent overly large policy updates
+- $( \hat{A}_t )$: advantage estimate at time $( t )$
+
+Our PPO model uses MlpPolicy with separate policy and value networks, each with two hidden layers of size 256 and Tanh activations. The main hyperparameters are: 
+- `learning_rate = 3e-4`, 
+- `n_steps = 2048`, 
+- `batch_size = 256`, 
+- `n_epochs = 10`, 
+- `gae_lambda = 0.95`, 
+- `clip_range = 0.2`, 
+- `ent_coef = 0.03`,
+- `vf_coef = 0.5`
+- `gamma` = math.exp(math.log(0.5) / (fps * half_life_seconds))
+
+One notebale design choice in our training setup is how we set the gamma factor. Rather than manually selecting a default value, we derived the **gamma** value based on a 20-second reward half-life and the environment’s decision rate. Since the agent performs an action every 250 milliseconds—equivalent to four decisions per second—the gamma value was calculated based on this timescale.
+
+The training process will continue until we end it manually, but we do save checkpoints every 50,000 steps and also hard save of full model and normalization statistics every 100,000 steps. This setup lets us resume long-running training while keeping evaluation consistent with the training distribution.
 
 The reward function is one of the most critical components of our PPO architecture. In each iteration step, the agent receives a base survival reward; it receives an additional reward when the score improves; and it receives yet another reward when the total waiting time or maximum queue length decreases. At the same time, the agent is penalized for situations such as excessive total waiting time, severe congestion, maintaining too many paths, performing high-cost operations, or selecting invalid operations. Terminal failures result in significant negative rewards. This design aims to balance short-term congestion control with long-term network quality, while preventing agents from adopting behaviors that appear simple but are eventually not usefull.
 
